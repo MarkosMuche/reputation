@@ -87,30 +87,36 @@ def intersection(lst1, lst2):
 	return lst3
 
 def pick_agent(ranks,list,self,memories = None,bad_agents = None):
+	'''
+	this function returns an agent that is selected for transaciton.
+	'''
 	picked = None
-	if memories is not None:
+	if memories is not None: #(by mark) if there is memory of transaction 
 		#good agents case
-		if self in memories:
+		if self in memories:  # (by mark) if the good agent trying to buy has memories of fraud, 
+								#put bad agent into black list
 			blacklist = memories[self]
 		else:
 			blacklist = []
 			memories[self] = blacklist
 		if blacklist is not None:
+			# (by mark) if there is black list, take them out from the list AND if current agent is in supplier list
 			list = [white for white in list if white not in blacklist and white != self]
 		if ranks is not None:
-			list = list_best_ranked(ranks,list,threshold)
+			list = list_best_ranked(ranks,list,threshold) # (by mark) take all that are above the treshold in rank
 	else:
 		#bad agents case
 		blacklist = None
 		list = [black for black in list if black != self]
-	picked = list[0] if len(list) == 1 else list[random.randint(0,len(list)-1)]
+	picked = list[0] if len(list) == 1 else list[random.randint(0,len(list)-1)] #(by mark) select randomly from the list
 
-	#debug
-	#if blacklist is not None:
-	#	print(picked)
+	# #debug
+	# if blacklist is not None:
+	# 	print(picked)
 	
 	if blacklist is not None and bad_agents is not None and picked in bad_agents:
 		blacklist.append(picked) #blacklist picked bad ones once picked so do not pick them anymore
+		# (by mark) question: then where is the black list saved?
 	return picked
 
 
@@ -139,7 +145,7 @@ Simulation of market simulation
 		rs - reputation service as either AigentsAPIReputationService or AigentsCLIReputationService or any other 
 """
 def reputation_simulate(good_agent,bad_agent,since,sim_days,ratings,rs,verbose=False,campaign=None,silent=False):
-	random.seed(1) # Make it deterministic
+	random.seed(1) # Make it determionistic
 	memories = {} # init blacklists of compromised ones
 
 	if rs is not None:
@@ -179,6 +185,8 @@ def reputation_simulate(good_agent,bad_agent,since,sim_days,ratings,rs,verbose=F
 	bad_agents_values = bad_agent['values']
 	good_agents_count = len(good_agents)
 	bad_agents_count = len(bad_agents)
+
+	# (by mark) good_agents_volume is the minimum money all good agents spend
 	good_agents_volume = good_agents_count * good_agents_transactions * good_agents_values[0]
 	bad_agents_volume = bad_agents_count * bad_agents_transactions * bad_agents_values[0]
 	code = ('r' if ratings else 'p') + '_' + str(round(good_agents_values[0]/bad_agents_values[0])) + '_' + str(good_agents_transactions/bad_agents_transactions) \
@@ -192,6 +200,7 @@ def reputation_simulate(good_agent,bad_agent,since,sim_days,ratings,rs,verbose=F
 
 	with open(transactions, 'w') as file:
 		for day in range(sim_days):
+			######################################################## update aranks and reputations
 			prev_date = since + datetime.timedelta(days=(day-1))
 			date = since + datetime.timedelta(days=day)
 			if verbose:
@@ -210,8 +219,8 @@ def reputation_simulate(good_agent,bad_agent,since,sim_days,ratings,rs,verbose=F
 			skip_scam = False
 			if campaign is not None:
 				campaign_day = day % campaign[0] # campaign.period
-				if campaign_day == 0:
-					if day > 0:
+				if campaign_day == 0: 
+					if day > 0:# this is only after half of the 364, 364 etc.
 						if verbose:
 							print('reset scam')
 						scam_generation = day // campaign[0] # campaign.period
@@ -230,12 +239,14 @@ def reputation_simulate(good_agent,bad_agent,since,sim_days,ratings,rs,verbose=F
 					print('do scam')
 
 			daily_good_to_bad = 0
-			for agent in good_consumers:
+			########################################################### perform transactions
+			#(by mark) from this onwards, there happens transaction for each 8550 good consumers
+			for agent in good_consumers: #(by mark) each agent buys
 				daily_selections = {}
-				for t in range(0, good_agents_transactions):
-					other = pick_agent(ranks,all_suppliers,agent,memories,bad_agents)
-					cost = random.randint(good_agents_values[0],good_agents_values[1])
-					actual_good_volume += cost
+				for t in range(0, good_agents_transactions): # (by mark) agents only buy good_agents_transactions times
+					other = pick_agent(ranks,all_suppliers,agent,memories,bad_agents) #(by mark) picks supplier
+					cost = random.randint(good_agents_values[0],good_agents_values[1]) # (by mark) randomly from 100 to 1000
+					actual_good_volume += cost # appended to actual good volume... total ወጭ by good
 					# while ratings range is [0.0, 0.25, 0.5, 0.75, 1.0], we rank good agents as [0.25, 0.5, 0.75, 1.0]
 					rating = 0.0 if other in bad_agents else float(random.randint(1,4))/4
 					if other in bad_agents:
@@ -259,7 +270,7 @@ def reputation_simulate(good_agent,bad_agent,since,sim_days,ratings,rs,verbose=F
 			if skip_scam:
 				continue
 		
-			for agent in bad_consumers:
+			for agent in bad_consumers: # (by mark) scam happening here
 				for t in range(0, bad_agents_transactions):
 					other = pick_agent(None,bad_suppliers,agent)
 					cost = random.randint(bad_agents_values[0],bad_agents_values[1])

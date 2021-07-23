@@ -132,6 +132,7 @@ def reputation_calc_p1(new_subset,conservatism,precision,temporal_aggregation=Fa
     ##  Inputs are dictionaries, arrays and True/False statements.
     ### We change the subeset that is incoming in order to put downratings transformation.
     new_subset = downratings(downrating,new_subset)
+    # (by mark) new subset is the current ratings if downrating is true, downrating adusted
     if rater_bias != None:
         rater_bias,average_rating = update_biases(rater_bias,new_subset,conservatism)
         
@@ -259,17 +260,17 @@ def update_reputation(reputation,new_array,default_reputation,spendings):
     while i<len(new_array):
         ### If we already have it, we do nothing in this function...
         ### The rest is also checking for "to" transactions and doing the same thing there..
-        if new_array[i][1] in reputation:
+        if new_array[i][1] in reputation:  #(by mark) if the supplier is in reputation 
             ### If reputation already has an id, we go on, otherwise we add default reputation.
             pass
         else:
             new_ids.append(new_array[i][1])
             reputation[new_array[i][1]] = default_reputation
         ### If we have spendings, we need reputation also for buyers. We make it default if it does not exist yet.    
-        if spendings>0:
-            if new_array[i][0] in reputation:
+        if spendings>0: 
+            if new_array[i][0] in reputation: # (by mark) if the buyer is in reputation
                 pass
-            else:
+            else: #(by mark) if the buyer doesn't have reputation,
                 new_ids.append(new_array[i][0])
                 reputation[new_array[i][0]] = default_reputation
             
@@ -311,10 +312,10 @@ def logratings_precision(rating,lograting,precision,weighting):
         ### If not lograting, we do not do log transformation.
         if precision==None:
             precision=1
-        if rating[2] == None:
+        if rating[2] == None:#(by mark) financial value or weight
             new_rating = rating[3]/precision
         else:
-            if rating[3] == None:
+            if rating[3] == None: #(by mark) rating value
                 new_rating = rating[2]/precision
             else:
                 new_weight = rating[2]/precision
@@ -393,19 +394,21 @@ def calculate_new_reputation(logging,new_array,to_array,reputation,rating,precis
             mys[new_array[i][1]] = 0
         i+=1
     ## getting the formula for mys.
-    unique_ids = np.unique(to_array)
+    unique_ids = np.unique(to_array) #(by mark) unique ids are the unique ids of suppliers
     k=0
     i = 0
     to_array = np.array(to_array)
     ### Formula differs based on conditions. If ratings are included, formula includes ratings, then there are weights, etc.
     prev_rep1 = dict()
     prev_rep1a = dict()
-    while i<len(unique_ids):
+    while i<len(unique_ids): #(by mark) for each supplier, calculate its reputation 
+                             # note that reputation is sum(rating*weight*rater reputaion prev)
         amounts = []
         denominators = []
         ### Here we get log transformation of each amount value. 
+        # (by mark) get_subset is the consumers who have rated buyer unique_ids[i]
         get_subset = np.where(to_array==unique_ids[i])[0]
-        for k in get_subset:
+        for k in get_subset: #(by mark) for each rater for supplier i
             if weighting:
                 ### Calculate ratings and weights.
                 new_rating, new_weight = weight_calc(new_array[k],logratings,precision,weighting)
@@ -431,15 +434,15 @@ def calculate_new_reputation(logging,new_array,to_array,reputation,rating,precis
                 logging.debug(text)
                 #no need for denomination by sum of weights in such case 
         ### After we are done collecting sums for certain ids, we sum up everything we have.
-        mys[unique_ids[i]] = sum(amounts)
+        mys[unique_ids[i]] = sum(amounts) # (by mark) sum up the reputations for all raters (buyers)
         ### If we have denominators, we also sum them up.
         if weighting:
             if len(denominators) > 0:
                 myd[unique_ids[i]] = sum(denominators)
 #
-        i+=1
+        i+=1 #(by mark) go to the next supplier and calculate his reputation
     ### Let's update the records from previous reputations and how we update them (for raters)
-    for k in prev_rep1a.keys():
+    for k in prev_rep1a.keys(): # (by mark) can we just assign instead of for loop? previous_rep=prev_rep1a
         previous_rep[k] = prev_rep1a[k]
     ### If we have weighting and denomination, then we 
     if weighting:
@@ -538,13 +541,13 @@ def normalize_reputation(reputation,new_array,unrated,default1,decay,conservatis
     for k in reputation.keys():
         if normalizedRanks: ### normalizedRanks is equal to fullnorm.
             if max_value!=min_value:
-                reputation[k] = (reputation[k]-min_value) /(max_value-min_value)
+                reputation[k] = (reputation[k]-min_value) /(max_value-min_value) #(by mark) if normalizedRanks or fullnorm
             else:
                 pass
         else:
         ### Now, way of solving this problem in a bit more common way:        
             if max_value!= 0:
-                reputation[k] = reputation[k] /max_value
+                reputation[k] = reputation[k] /max_value # (by mark) this is the algorithm here
             else:
                 pass
     i = 0
@@ -578,7 +581,7 @@ def initialize_dict(from_array,to_array):
 
 ### Updating reputation - blending differential and reputation.
 ### In original paper, there were a few proposed ways of updating and approach d has been found to be the most
-### useful and the only ne we are using at the moment.
+### useful and the only one we are using at the moment.
 def update_reputation_approach_d(first_occurance,reputation,mys,since,our_date,default_rep,conservativity):
     ### Our current approach of updating reputation each time period. 
     j = 0

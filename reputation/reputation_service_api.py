@@ -26,6 +26,7 @@
 from reputation_calculation import find_between, find_between_r, parse_prefix, transform_ratings, reputation_calc_p1, update_reputation, update_biases, calculate_new_reputation, normalized_differential, normalize_reputation, update_reputation_approach_d, spending_based, calculate_average_individual_rating_by_period, update_predictiveness_data, normalize_individual_data, calculate_distance, normalize_correlations, my_round
 from datetime import datetime, timedelta,date
 from reputation_base_api import ReputationServiceBase
+
 import logging as logging
 
 """
@@ -42,6 +43,8 @@ class PythonReputationService(ReputationServiceBase):
     ### Set parameters. In changes, there is a dictionary with values and if there are no determined values,
     ### we set up default values.
     def set_parameters(self,changes):
+        #changes is a dictionary of parameters including default, conservatism, precision, weighting, 
+        # denomination, fullnorm, liquid, logranks, update_period, 
         if 'default' in changes.keys():
             self.default = changes['default']
         else:
@@ -197,8 +200,6 @@ class PythonReputationService(ReputationServiceBase):
                 'logratings':self.logratings, 'ratings':self.ratings_param, 'spendings':self.spendings,'predictiveness':self.predictiveness,'unrated':self.unrated,'rating_bias':self.rating_bias,'logranks':self.logranks})
 #27:body:2019-07-30T23:53:21.511:I:8c5b4f5fb913462e99c248daccfc36c0:reputation network test set parameters default 0.5 decayed 0.5 conservatism 0.25 precision 0.01 liquid true period 1 aggregation true downrating false fullnorm false weighting true denomination false logratings false ratings 1.0 spendings 0.0 parents 0.0 predictiveness 1 rating_bias true unrated false
     
-    
-    
     ## Update date
     def set_date(self,newdate):
         self.our_date = newdate
@@ -263,6 +264,11 @@ class PythonReputationService(ReputationServiceBase):
 
     ### We run the update in this function.    
     def update_ranks(self,mydate):
+        """
+        updates the reputations of the object self for the day mydate
+        returns nothing
+        """
+
         if not "rater_ranks_special" in dir(self):
             self.rater_ranks_special = dict()
         self.non_rounded_rep = dict()
@@ -286,12 +292,14 @@ class PythonReputationService(ReputationServiceBase):
                 
         self.current_ratings = []
         ### Sellect data which we will use.
+        # (by mark) select_data(mydate) updates the current ratings value of the object into mydate's rating values
         self.select_data(mydate)
         i=0
         problem = False
         while i<len(self.current_ratings):
             ### If we do not have values, then we have a problem. Even if only one rating is missing,
             ### there is a problem.
+            #(by mark) if you said use ratings but there are no ratings, then there is a problem.
             if (self.use_ratings==True and (not 'value' in self.current_ratings[i].keys())):
                 problem=True
             i+=1
@@ -319,8 +327,9 @@ class PythonReputationService(ReputationServiceBase):
             self.average_ratings[mydate] = avgs
             self.rater_biases[mydate] = dict(rater_biases1)
         else:
+            # array1 has all the information about the ratings 'from','to','weighting', and 'value'
             array1 , dates_array, to_array, rater_biases1 = reputation_calc_p1(self.current_ratings,self.conservatism,self.precision,self.temporal_aggregation,False,self.logratings,self.downrating,self.weighting, None)  ### In this case, we don't need rater_biases
-        ### Now we update the reputation. Here, old ranings are inseter and then new ones are calculated as output.
+        ### Now we update the reputation. Here, old rankings are inseted and then new ones are calculated as output.
 
         self.reputation = update_reputation(self.reputation,array1,self.default,self.spendings)
         
@@ -352,7 +361,7 @@ class PythonReputationService(ReputationServiceBase):
         else:
             self.sellers = []
         
-        for k in new_reputation.keys():
+        for k in new_reputation.keys(): #(by mark) since new repuation is for sellers, k is each seller
             if k not in self.sellers:
                 self.sellers.append(k)
         if (self.spendings>0 and self.predictiveness==0):

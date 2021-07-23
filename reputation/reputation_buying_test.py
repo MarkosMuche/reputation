@@ -23,7 +23,8 @@
 # Reputation Scenario Test Data Generation
 import time
 
-import datetime
+# import datetime
+from datetime import date
 from reputation_buying import reputation_simulate
 from reputation_service_api import *
 from aigents_reputation_api import AigentsAPIReputationService
@@ -65,14 +66,14 @@ days = 101
 #bad_agent = {"buyers":[9,10], "products":[19,20], "qualities":[0.0,0.25], "transactions": bad_transactions}
 #days = 11
 
-#good_agent = {"buyers":[1,3], "products":[6,8], "qualities":[0.5,0.75,1.0], "transactions": good_transactions}
-#bad_agent = {"buyers":[4,5], "products":[9,10], "qualities":[0.0,0.25], "transactions": bad_transactions}
-#days = 5
+good_agent = {"buyers":[1,3], "products":[6,8], "qualities":[0.5,0.75,1.0], "transactions": good_transactions}
+bad_agent = {"buyers":[4,5], "products":[9,10], "qualities":[0.0,0.25], "transactions": bad_transactions}
+days = 5
 
 #rs = AigentsAPIReputationService('http://localtest.com:1180/', 'john@doe.org', 'q', 'a', False, 'test', True)
 rs = PythonReputationService()
 rs.set_parameters({'fullnorm':True,'weighting':False,'logratings':False,'denomination':False,'unrated':False,'default':0.5,'decayed':0.5,'conservatism':0.5,'ratings':1.0,'spendings':0.0})
-verbose = False
+verbose = True
 
 
 """
@@ -141,12 +142,12 @@ reputation_simulate(good_agent,bad_agent, datetime.date(2018, 1, 1), days, True,
 
 for threshold in [40,60,80]:
 	print('threshold='+str(threshold))
-	reputation_simulate(good_agent,bad_agent, datetime.date(2018, 1, 1), days, True, threshold, 0, None, verbose)	
-	reputation_simulate(good_agent,bad_agent, datetime.date(2018, 1, 1), days, True, threshold, 0, rs, verbose)	
-	reputation_simulate(good_agent,bad_agent, datetime.date(2018, 1, 1), days, True, threshold, 30, rs, verbose)
-	reputation_simulate(good_agent,bad_agent, datetime.date(2018, 1, 1), days, True, threshold, 50, rs, verbose)
-	reputation_simulate(good_agent,bad_agent, datetime.date(2018, 1, 1), days, True, threshold, 70, rs, verbose)
-	reputation_simulate(good_agent,bad_agent, datetime.date(2018, 1, 1), days, True, threshold, 100, rs, verbose)
+	reputation_simulate(good_agent,bad_agent, date(2018, 1, 1), days, True, threshold, 0, None, verbose)	
+	reputation_simulate(good_agent,bad_agent, date(2018, 1, 1), days, True, threshold, 0, rs, verbose)	
+	reputation_simulate(good_agent,bad_agent, date(2018, 1, 1), days, True, threshold, 30, rs, verbose)
+	reputation_simulate(good_agent,bad_agent, date(2018, 1, 1), days, True, threshold, 50, rs, verbose)
+	reputation_simulate(good_agent,bad_agent, date(2018, 1, 1), days, True, threshold, 70, rs, verbose)
+	reputation_simulate(good_agent,bad_agent, date(2018, 1, 1), days, True, threshold, 100, rs, verbose)
 
 
 """
