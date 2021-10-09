@@ -45,7 +45,7 @@ def dict_sorted(d):
 #rs = AigentsAPIReputationService('http://localtest.com:1288/', 'john@doe.org', 'q', 'a', False, 'test', True)
 rs = PythonReputationService()
 if rs is not None:
-    rs.set_parameters({'fullnorm':True,'weighting':True,'logratings':False,'logranks':True})
+    rs.set_parameters({'fullnorm':True,'weighting':True,'logratings':False,'logranks':True,'predictiveness':0.5, 'rating_bias':True})
 
 verbose = True
 

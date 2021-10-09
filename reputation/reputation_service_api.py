@@ -43,15 +43,15 @@ class PythonReputationService(ReputationServiceBase):
     ### Set parameters. In changes, there is a dictionary with values and if there are no determined values,
     ### we set up default values.
     def set_parameters(self,changes):
-        #changes is a dictionary of parameters including default, conservatism, precision, weighting, 
-        # denomination, fullnorm, liquid, logranks, update_period, 
+        #(by mark) changes is a dictionary of parameters including default, conservatism, precision, weighting,
+        # denomination, fullnorm, liquid, logranks, update_period
         if 'default' in changes.keys():
             self.default = changes['default']
         else:
             if 'default' in dir(self):
                 pass
             else:
-                self.default = 0.5 # default value 
+                self.default = 0.5 # default value
         if 'conservatism' in changes.keys():
             self.conservatism = changes['conservatism']
         else:
@@ -178,7 +178,7 @@ class PythonReputationService(ReputationServiceBase):
         if 'logging' in changes.keys():
             self.logging = changes['logging']
         else:
-            self.logging = True              
+            self.logging = True
         if self.logging: ### If logging is enabled, we log everything
             log_name = "python-log" + datetime.now().strftime('%Y-%m-%d') + "-log.log"
             logging.basicConfig(filename=log_name, filemode='w', format='%(name)s - %(levelname)s - %(asctime)s - %(message)s', level=10)
@@ -289,7 +289,7 @@ class PythonReputationService(ReputationServiceBase):
                 self.predictive_data = dict()
                 self.pred_values = dict()
                 self.count_values = dict()
-                
+
         self.current_ratings = []
         ### Sellect data which we will use.
         # (by mark) select_data(mydate) updates the current ratings value of the object into mydate's rating values
@@ -332,8 +332,7 @@ class PythonReputationService(ReputationServiceBase):
         ### Now we update the reputation. Here, old rankings are inseted and then new ones are calculated as output.
 
         self.reputation = update_reputation(self.reputation,array1,self.default,self.spendings)
-        
-        
+
         ### If we have spendings-based reputation, we go in the loop below.
         if self.spendings>0:
             spendings_dict = spending_based(array1,dict(),self.logratings,self.precision,self.weighting)
@@ -409,7 +408,7 @@ class PythonReputationService(ReputationServiceBase):
             self.predictive_data, ids = update_predictiveness_data(self.predictive_data,mydate,self.reputation,avg_ind_rat_byperiod,self.conservatism)
             self.calculate_indrating(ids,mydate)
             text = "Individual rating: " + str(self.predictive_data) + ", and rating used for rater reputation: " + str(self.pred_values)
-            logging.debug(text)                 
+            logging.debug(text)
         return(0)
 
     ### When we want to save ratings to our system. So, we can add them, the same way as in Java.        
@@ -560,7 +559,7 @@ class PythonReputationService(ReputationServiceBase):
                 relevant_ranks.append(self.non_rounded_rep[j])
                 thevalues.append(k[j])
 
-                    
+    
             if len(relevant_ranks)!=0:        
                 cors = calculate_distance(relevant_ranks,thevalues)
             else:
@@ -576,19 +575,14 @@ class PythonReputationService(ReputationServiceBase):
             max_correlats = max(correlats.values())
         #for k1 in correlats.keys():
         #    correlats[k1] = correlats[k1]/max_correlats 
-        for k1 in self.predictive_data.keys():     
-
-            
+        for k1 in self.predictive_data.keys():
             if k1 in self.pred_values.keys():
                 self.pred_values[k1] = correlats[k1]
             else:
                 self.pred_values[k1] = dict()
                 self.pred_values[k1] = correlats[k1]
-        
+
         return(0)
-    
-    
-    
     def __init__(self):
         ### we can also initialie everything.
         self.ratings = {}

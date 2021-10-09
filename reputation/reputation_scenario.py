@@ -155,7 +155,7 @@ def reputation_simulate(good_agent,bad_agent,since,sim_days,ratings,rs,verbose=F
 	actual_bad_volume = 0
 	actual_good_volume = 0
 	actual_good_to_bad_volume = 0
-	
+
 	good_agents = [i for i in range(good_agent['range'][0],good_agent['range'][1]+1)]
 	bad_agents = [i for i in range(bad_agent['range'][0],bad_agent['range'][1]+1)]
 

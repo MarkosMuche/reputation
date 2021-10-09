@@ -152,6 +152,7 @@ def reputation_calc_p1(new_subset,conservatism,precision,temporal_aggregation=Fa
     new_array = []
     israting = True
     while i<len(new_subset):
+
         if 'value' in list(new_subset[i].keys()):
             ### put ratings in array. Note, that we don't always have information about rating, that is
             ### what ratings were given by specific customers.
@@ -324,19 +325,23 @@ def logratings_precision(rating,lograting,precision,weighting):
     return(new_rating,new_weight) #return weighted value Fij*Qij to sum and weight Qij to denominate later in dRit = Î£j (Fij * Qij * Rjt-1 ) / Î£j (Qij)
 
 def update_biases(previous_bias,new_arrays, conservatism):
+    '''
+    (by mark) updates the optimism and pessimism bias'''
+
+    # all rating is the ratings by a rater
     all_rating = dict()
     i = 0
     while i<len(new_arrays):
         if new_arrays[i]['from'] in all_rating.keys():
             all_rating[new_arrays[i]['from']].append(new_arrays[i]['value'])
         else:
-            all_rating[new_arrays[i]['from']] = [new_arrays[i]['value']]
+            all_rating[new_arrays[i]['from']] = [new_arrays[i]['value']] # (by mark) append all the rating values in a list for each rater
         i+=1
     averages = dict()
-    for k in all_rating.keys():
-        averages[k] = np.mean(all_rating[k])
+    for k in all_rating.keys(): # (by mark) for each rater
+        averages[k] = np.mean(all_rating[k]) # (by mark) take the average of the ratings for each user (this will be kind of the bias of this period bias)
     unique_ids = []
-    for k in averages.keys():
+    for k in averages.keys(): # (by mark) for each user
         if k in unique_ids:
             pass
         else:
@@ -364,7 +369,7 @@ def update_biases(previous_bias,new_arrays, conservatism):
             if k in previous_bias.keys():
                 new_bias[k] = previous_bias[k]
                 
-    return(new_bias,averages)
+    return(new_bias,averages) # the new updated bias
 
 
 def fix_rater_bias(new_array,biases,average):
@@ -382,11 +387,12 @@ def fix_rater_bias(new_array,biases,average):
 ### We calculate differential here.
 def calculate_new_reputation(logging,new_array,to_array,reputation,rating,precision,previous_rep,default,unrated,normalizedRanks=True,weighting=True,denomination=True,liquid = False,logratings=False,logranks=True,predictiveness = 0,predictive_data = dict()):
     ### The output will be mys; this is the rating for that specific day (or time period).
-    ### This is needed; first create records for each id. mys is a differential.
+    ### This is needed; first create records for each id. 
+    # (by mark) mys is a differential.
     mys = {}
     myd = {} # denominators 
     i = 0
-    while i<len(new_array):
+    while i<len(new_array): #(by mark) i think no. of interactions
         if new_array[i][1] in mys:
             pass
         else:
@@ -406,8 +412,11 @@ def calculate_new_reputation(logging,new_array,to_array,reputation,rating,precis
         amounts = []
         denominators = []
         ### Here we get log transformation of each amount value. 
-        # (by mark) get_subset is the consumers who have rated buyer unique_ids[i]
+        # (by mark) get_subset is the consumers who have rated supplier unique_ids[i]
         get_subset = np.where(to_array==unique_ids[i])[0]
+
+
+        ###############################################very important piece
         for k in get_subset: #(by mark) for each rater for supplier i
             if weighting:
                 ### Calculate ratings and weights.
@@ -471,8 +480,7 @@ def normalized_differential(mys,normalizedRanks,our_default,spendings,log=True):
     if log:
         for k in mys.keys():
             mys[k] = -np.log10(1 - mys[k]) if mys[k] < 0 else np.log10(1 + mys[k])
-    ### It could as well be deleted; in this case test_spendings_normalization wll have different result.        
-            
+    ### It could as well be deleted; in this case test_spendings_normalization wll have different result.
     ### Then we use maximums, either from what we have or set it to one by default.
     max_value = max(mys.values(), default=1)
     min_value = min(mys.values(), default=0)
@@ -483,8 +491,7 @@ def normalized_differential(mys,normalizedRanks,our_default,spendings,log=True):
         min_value = max_value - our_default ### as the solution to issue #157
         if min_value==max_value and spendings>0:
             min_value = max_value - 1
-        
-    ### Now, way of solving this problem in a bit more common way:        
+    ### Now, way of solving this problem in a bit more common way:
     for k in mys.keys():
         if max_value==min_value:
             ### Still looking at a special case when max_value==min_value.
@@ -527,6 +534,7 @@ def rater_reputation(previous_reputations,rater_id,default,prev_reputation,liqui
             #raise ValueError('Calling for predictiveness without previous predictive data.')
         else:
             rater_rep = rater_rep * (1-predictiveness) + predictiveness * predictive_data[rater_id] * rater_rep
+
     previous_rep1 = dict()
     for k in prev_reputation.keys():
         previous_rep1[k] = prev_reputation[k]
@@ -662,20 +670,21 @@ def max_date(mydict):
     return(mydict[last_date])
 
 ### function of predictiveness
-def update_predictiveness_data(previous_pred,mydate,reputations,transactions,conservatism):
+
+def update_predictiveness_data(predictive_data,mydate,reputations,transactions,conservatism):
     ids_used = []
     for k in transactions:
         from_id = k
         ids_used.append(k)
-        if from_id not in previous_pred.keys():
-            previous_pred[from_id] = dict()
+        if from_id not in predictive_data.keys():
+            predictive_data[from_id] = dict()
         for to_id in transactions[from_id]:
-            if to_id in previous_pred[from_id].keys():
-                previous_pred[from_id][to_id] = transactions[from_id][to_id] * (1-conservatism) + conservatism * previous_pred[from_id][to_id] ### mydate should not exist yet in our run.
+            if to_id in predictive_data[from_id].keys():
+                predictive_data[from_id][to_id] = transactions[from_id][to_id] * (1-conservatism) + conservatism * predictive_data[from_id][to_id] ### mydate should not exist yet in our run.
             else:
-                previous_pred[from_id][to_id] = dict()
-                previous_pred[from_id][to_id] = transactions[from_id][to_id] #
-    return(previous_pred,ids_used)
+                predictive_data[from_id][to_id] = dict()
+                predictive_data[from_id][to_id] = transactions[from_id][to_id] #
+    return(predictive_data,ids_used)
 
 def normalize_individual_data(mydate,new_ids):
     all_from = new_ids.keys()
